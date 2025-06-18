@@ -2,14 +2,16 @@ import java.util.Objects;
 
 public class Task {
 
-    private Long taskId;
+    private long taskId;
     private String taskName;
     private Status taskStatus;
     private String taskDescription;
+
     public Task(String taskName,
-                String taskDescription) {
+                String taskDescription,
+                Status taskStatus) {
         this.taskName = taskName;
-        this.taskStatus = Status.NEW;
+        this.taskStatus = taskStatus;
         this.taskDescription = taskDescription;
     }
 
@@ -55,6 +57,7 @@ public class Task {
                 ", taskId='" + taskId + '\'' +
                 '}';
     }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

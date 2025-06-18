@@ -1,22 +1,20 @@
 import java.util.Objects;
 
-public class SubTask extends Task{
+public class SubTask extends Task {
 
-    private long epicId;
+    private Epic epic;
+
 
     public SubTask(String taskName,
                    String taskDescription,
-                   long epicId) {
-        super(taskName, taskDescription);
-        this.epicId = epicId;
+                   Status taskStatus,
+                   Epic epic) {
+        super(taskName, taskDescription, taskStatus);
+        this.epic = epic;
     }
 
-    public long getEpicId() {
-        return epicId;
-    }
-
-    public void setEpicId(long epicId) {
-        this.epicId = epicId;
+    public Epic getEpic() {
+        return epic;
     }
 
     @Override
@@ -26,7 +24,7 @@ public class SubTask extends Task{
                 ", taskDescription='" + this.getTaskDescription() + '\'' +
                 ", taskId=" + this.getTaskId() +
                 ", taskStatus='" + this.getTaskStatus() + '\'' +
-                ", epicId=" + this.getEpicId() +
+                ", epicId=" + epic.getTaskId() +
                 '}';
     }
 
@@ -35,11 +33,11 @@ public class SubTask extends Task{
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         SubTask that = (SubTask) o;
-        return this.getEpicId() == that.getEpicId() &&
-                Objects.equals(this.getTaskId(), that.getTaskId()) &&
+        return Objects.equals(this.getTaskId(), that.getTaskId()) &&
                 this.getTaskName().equals(that.getTaskName()) &&
                 this.getTaskDescription().equals(that.getTaskDescription()) &&
-                this.getTaskStatus().equals(that.getTaskStatus());
+                this.getTaskStatus().equals(that.getTaskStatus()) &&
+                this.getEpic().equals(that.getEpic());
     }
 
     @Override
@@ -47,6 +45,7 @@ public class SubTask extends Task{
         return Objects.hash(this.getTaskName(),
                 this.getTaskDescription(),
                 this.getTaskId(),
+                epic.getTaskId(),
                 this.getTaskStatus());
     }
 }

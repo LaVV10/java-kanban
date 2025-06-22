@@ -2,19 +2,18 @@ import java.util.Objects;
 
 public class SubTask extends Task {
 
-    private Epic epic;
-
+    private long epicId;
 
     public SubTask(String taskName,
                    String taskDescription,
                    Status taskStatus,
-                   Epic epic) {
+                   long epicId) {
         super(taskName, taskDescription, taskStatus);
-        this.epic = epic;
+        this.epicId = epicId;
     }
 
-    public Epic getEpic() {
-        return epic;
+    public long getEpicId() {
+        return epicId;
     }
 
     @Override
@@ -24,7 +23,7 @@ public class SubTask extends Task {
                 ", taskDescription='" + this.getTaskDescription() + '\'' +
                 ", taskId=" + this.getTaskId() +
                 ", taskStatus='" + this.getTaskStatus() + '\'' +
-                ", epicId=" + epic.getTaskId() +
+                ", epicId=" + this.getEpicId() +
                 '}';
     }
 
@@ -33,11 +32,11 @@ public class SubTask extends Task {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         SubTask that = (SubTask) o;
-        return Objects.equals(this.getTaskId(), that.getTaskId()) &&
+        return  this.getTaskId() == that.getTaskId() &&
                 this.getTaskName().equals(that.getTaskName()) &&
                 this.getTaskDescription().equals(that.getTaskDescription()) &&
                 this.getTaskStatus().equals(that.getTaskStatus()) &&
-                this.getEpic().equals(that.getEpic());
+                this.getEpicId() == that.getEpicId();
     }
 
     @Override
@@ -45,7 +44,7 @@ public class SubTask extends Task {
         return Objects.hash(this.getTaskName(),
                 this.getTaskDescription(),
                 this.getTaskId(),
-                epic.getTaskId(),
+                epicId,
                 this.getTaskStatus());
     }
 }

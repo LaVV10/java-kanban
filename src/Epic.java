@@ -15,7 +15,7 @@ public class Epic extends Task {
         return subTasks;
     }
 
-    public void setSubTask(SubTask subTaskId) {
+    public void addSubTask(SubTask subTaskId) {
         subTasks.add(subTaskId); // Добавляем подзадачу
         checkEpicStatus();
     }
@@ -29,33 +29,37 @@ public class Epic extends Task {
         checkEpicStatus();
     }
 
-    private void checkEpicStatus() {
-        // текущий статус эпика
-        Status epicStatus = getTaskStatus();
-        if (getSubTasks().isEmpty()) {
-            epicStatus = Status.NEW; // если нет подзадач, статус эпика NEW
-        } else {
-            boolean allNew = true;  // признак того, что все подзадачи NEW
-            boolean allDone = true; // признак того, что все подзадачи DONE
+    // Очищаем список подзадач
+    public void clearSubTasks() {
+        subTasks.clear();
+        checkEpicStatus();
+    }
 
-            for (SubTask subTask : getSubTasks()) {
-                Status statusSubtask = subTask.getTaskStatus();
-                if (statusSubtask != Status.NEW) {
-                    allNew = false; // если хотя бы одна подзадача не NEW, снимаем признак
+    public void checkEpicStatus() {
+        // текущий статус эпика
+        if (subTasks.isEmpty()) {
+            setTaskStatus(Status.NEW); // Если нет подзадач, статус NEW
+        } else {
+            boolean allNew = true; // Признак того, что все подзадачи NEW
+            boolean allDone = true; // Признак того, что все подзадачи DONE
+
+            for (SubTask subTask : subTasks) {
+                if (subTask.getTaskStatus() != Status.NEW) {
+                    allNew = false; // Если хотя бы одна подзадача не NEW, снимаем признак
                 }
-                if (statusSubtask != Status.DONE) {
-                    allDone = false; // если хотя бы одна подзадача не DONE, снимаем признак
+                if (subTask.getTaskStatus() != Status.DONE) {
+                    allDone = false; // Если хотя бы одна подзадача не DONE, снимаем признак
                 }
             }
+
             if (allNew) {
-                epicStatus = Status.NEW;  // если все подзадачи NEW, эпик NEW
+                setTaskStatus(Status.NEW); // Если все подзадачи NEW, эпик NEW
             } else if (allDone) {
-                epicStatus = Status.DONE; // если все подзадачи DONE, эпик DONE
+                setTaskStatus(Status.DONE); // Если все подзадачи DONE, эпик DONE
             } else {
-                epicStatus = Status.IN_PROGRESS; // в противном случае эпик IN_PROGRESS
+                setTaskStatus(Status.IN_PROGRESS); // Во всех остальных случаях эпик IN_PROGRESS
             }
         }
-        setTaskStatus(epicStatus);
     }
 
     @Override

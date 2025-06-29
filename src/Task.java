@@ -40,6 +40,10 @@ public class Task {
         this.taskStatus = taskStatus;
     }
 
+    public void setTaskDescription(String taskDescription) {
+        this.taskDescription = taskDescription;
+    }
+
     public String getTaskDescription() {
         return taskDescription;
     }

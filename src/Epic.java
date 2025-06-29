@@ -15,8 +15,8 @@ public class Epic extends Task {
         return subTasks;
     }
 
-    public void addSubTask(SubTask subTaskId) {
-        subTasks.add(subTaskId); // Добавляем подзадачу
+    public void addSubTask(SubTask subTask) {
+        subTasks.add(subTask); // Добавляем подзадачу
         checkEpicStatus();
     }
 
@@ -35,7 +35,7 @@ public class Epic extends Task {
         checkEpicStatus();
     }
 
-    public void checkEpicStatus() {
+    private void checkEpicStatus() {
         // текущий статус эпика
         if (subTasks.isEmpty()) {
             setTaskStatus(Status.NEW); // Если нет подзадач, статус NEW

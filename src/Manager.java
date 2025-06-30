@@ -85,10 +85,10 @@ public class Manager {
     public void addSubTask(SubTask subTask) {
         long id = TaskId.getNewId();
         subTask.setTaskId(id);
-        subTasks.put(id, subTask);
         long epicId = subTask.getEpicId();
         Epic epic = epics.get(epicId);     // Находим эпик по идентификатору
         if (epic != null) {
+            subTasks.put(id, subTask);
             epic.addSubTask(subTask); // Добавляем подзадачу в список подзадач эпика
         } else {
             System.out.println("Эпик не найден");
@@ -135,15 +135,18 @@ public class Manager {
     }
 
     // Удаление подзадачи по идентификатору
-    public void removeSubTaskFromEpic(long id) {
-        if (subTasks.remove(id) == null) {
+    public void removeSubTask(long id) {
+        SubTask subTask = subTasks.remove(id);
+        if (subTask == null) {
             System.out.println("Задача с указанным идентификатором не найдена");
         } else {
-            SubTask subTaskValue = subTasks.get(id);
-            long epicId = subTaskValue.getEpicId();
+            long epicId = subTask.getEpicId();
             Epic epic = epics.get(epicId);
-            subTasks.remove(id);
-            epic.deleteSubTask(subTaskValue);
+            if (epic != null) {
+                epic.deleteSubTask(subTask); // Удаляем подзадачу из списка подзадач эпика
+            } else {
+                System.out.println("Эпик не найден");
+            }
         }
     }
 
@@ -151,16 +154,12 @@ public class Manager {
     public void deleteTask(long id) {
         if (tasks.remove(id) == null) {
             System.out.println("Задача с указанным идентификатором не найдена");
-        } else {
-            tasks.remove(id);
         }
     }
 
     public void deleteEpic(long id) {
         if (epics.remove(id) == null) {
             System.out.println("Задача с указанным идентификатором не найдена");
-        } else {
-            epics.remove(id);
         }
     }
 }

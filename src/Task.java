@@ -14,6 +14,15 @@ public class Task {
         this.taskStatus = taskStatus;
         this.taskDescription = taskDescription;
     }
+    public Task(long taskId,
+                String taskName,
+                String taskDescription,
+                Status taskStatus) {
+        this.taskId = taskId;
+        this.taskName = taskName;
+        this.taskStatus = taskStatus;
+        this.taskDescription = taskDescription;
+    }
 
 
     public Long getTaskId() {
@@ -50,11 +59,11 @@ public class Task {
 
     @Override
     public String toString() {
-        return "Task{" +
-                "taskName=" + taskName +
-                ", taskDescription='" + taskDescription + '\'' +
-                ", taskStatus=" + taskStatus +
-                ", taskId='" + taskId + '\'' +
+        return "Task {" +
+                "taskName = " + taskName +
+                ", taskDescription = " + taskDescription +
+                ", taskStatus = " + taskStatus +
+                ", taskId = " + taskId +
                 '}';
     }
 
@@ -63,14 +72,17 @@ public class Task {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Task task = (Task) o;
-        return Objects.equals(taskId, task.taskId) &&
-                Objects.equals(taskName, task.taskName) &&
-                taskStatus.equals(task.taskStatus) &&
-                Objects.equals(taskDescription, task.taskDescription);
+        return Objects.equals(taskId, task.taskId);
     }
+               // Objects.equals(taskName, task.taskName) &&
+               // taskStatus.equals(task.taskStatus) &&
+               // Objects.equals(taskDescription, task.taskDescription);
+
 
     @Override
     public int hashCode() {
-        return Objects.hash(taskId, taskName, taskStatus, taskDescription);
+        return Objects.hash(taskId);
     }
+                //taskName, taskStatus, taskDescription);
+
 }

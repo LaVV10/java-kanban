@@ -11,11 +11,21 @@ public class Epic extends Task {
         subTasks = new ArrayList<>();
     }
 
+    public Epic(long taskId,
+                String taskName,
+                String taskDescription) {
+        super(taskId, taskName, taskDescription, Status.NEW);
+        subTasks = new ArrayList<>();
+    }
+
     public ArrayList<SubTask> getSubTasks() {
         return subTasks;
     }
 
     public void addSubTask(SubTask subTask) {
+        if (subTask.getTaskId() == this.getTaskId()) {
+            throw new IllegalArgumentException("Эпик не может быть подзадачей самого себя");
+        }
         subTasks.add(subTask); // Добавляем подзадачу
         checkEpicStatus();
     }
@@ -68,12 +78,12 @@ public class Epic extends Task {
         for (SubTask subTask : subTasks) {
             subTaskId.add(subTask.getTaskId());
         }
-        String result = "Epic{" +
-                "taskName='" + getTaskName() + '\'' +
-                ", taskDescription='" + getTaskDescription() + '\'' +
-                ", taskId=" + getTaskId() +
-                ", taskStatus='" + getTaskStatus() + '\'' +
-                ", subTaskId=" + subTaskId +
+        String result = "Epic {" +
+                "taskName = " + getTaskName() +
+                ", taskDescription = " + getTaskDescription() +
+                ", taskId = " + getTaskId() +
+                ", taskStatus = " + getTaskStatus() +
+                ", subTaskId = " + subTaskId +
                 '}';
         return result;
     }
@@ -83,17 +93,17 @@ public class Epic extends Task {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Task task = (Task) o;
-        return Objects.equals(this.getTaskId(), task.getTaskId()) &&
-                this.getTaskName().equals(task.getTaskName()) &&
+        return Objects.equals(this.getTaskId(), task.getTaskId());
+                /*this.getTaskName().equals(task.getTaskName()) &&
                 this.getTaskDescription().equals(task.getTaskDescription()) &&
-                this.getTaskStatus().equals(task.getTaskStatus());
+                this.getTaskStatus().equals(task.getTaskStatus());*/
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.getTaskName(),
+        return Objects.hash(this.getTaskId());
+                /*this.getTaskName(),
                 this.getTaskDescription(),
-                this.getTaskId(),
-                this.getTaskStatus());
+                this.getTaskStatus());*/
     }
 }

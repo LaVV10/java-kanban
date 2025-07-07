@@ -102,21 +102,21 @@ public class InMemoryTaskManager implements TaskManager {
     // Метод для создания задачи
     @Override
     public void addTask(Task task) {
-        long id = TaskId.getNewId(); // Берём следующий свободный идентификатор
+        long id = Task.getNewId(); // Берём следующий свободный идентификатор
         task.setTaskId(id); // Присваиваем идентификатор задаче
         tasks.put(id, task); // Добавляем задачу в словарь
     }
 
     @Override
     public void addEpic(Epic epic) {
-        long id = TaskId.getNewId(); // Берём следующий свободный идентификатор
+        long id = Task.getNewId(); // Берём следующий свободный идентификатор
         epic.setTaskId(id); // Присваиваем идентификатор задаче
         epics.put(id, epic); // Добавляем задачу в словарь
     }
 
     @Override
     public void addSubTask(SubTask subTask) {
-        long id = TaskId.getNewId();
+        long id = Task.getNewId();
         subTask.setTaskId(id);
         long epicId = subTask.getEpicId();
         Epic epic = epics.get(epicId);     // Находим эпик по идентификатору

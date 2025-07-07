@@ -6,7 +6,7 @@ public class Task {
     private String taskName;
     private Status taskStatus;
     private String taskDescription;
-
+    private static long id;
     public Task(String taskName,
                 String taskDescription,
                 Status taskStatus) {
@@ -24,6 +24,9 @@ public class Task {
         this.taskDescription = taskDescription;
     }
 
+    public static long getNewId() {
+        return ++id;
+    }
 
     public Long getTaskId() {
         return taskId;

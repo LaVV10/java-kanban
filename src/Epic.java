@@ -1,24 +1,23 @@
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class Epic extends Task {
 
-    private ArrayList<SubTask> subTasks;
+    private List<SubTask> subTasks = new ArrayList<>();
 
     public Epic(String taskName,
                 String taskDescription) {
         super(taskName, taskDescription, Status.NEW);
-        subTasks = new ArrayList<>();
     }
 
     public Epic(long taskId,
                 String taskName,
                 String taskDescription) {
         super(taskId, taskName, taskDescription, Status.NEW);
-        subTasks = new ArrayList<>();
     }
 
-    public ArrayList<SubTask> getSubTasks() {
+    public List<SubTask> getSubTasks() {
         return subTasks;
     }
 
@@ -74,7 +73,7 @@ public class Epic extends Task {
 
     @Override
     public String toString() {
-        ArrayList<Long> subTaskId = new ArrayList<>();
+        List<Long> subTaskId = new ArrayList<>();
         for (SubTask subTask : subTasks) {
             subTaskId.add(subTask.getTaskId());
         }

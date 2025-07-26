@@ -19,11 +19,11 @@ public class InMemoryHistoryManager implements HistoryManager {
             Node<Task> deleteNode = historyMap.get(task.getTaskId());
             historyLinkedList.removeNode(deleteNode);
         }
-        historyMap.put(task.getTaskId(),historyLinkedList.linkLast(task));
+        historyMap.put(task.getTaskId(), historyLinkedList.linkLast(task));
     }
 
     @Override
-    public List<Task> getHistory(){
+    public List<Task> getHistory() {
         return historyLinkedList.getTasks();
     }
 
@@ -36,6 +36,7 @@ public class InMemoryHistoryManager implements HistoryManager {
     }
 
 }
+
 class HistoryLinkedList<T> {
 
     private Node<T> head;  // указатель на первый элемент связанного списка

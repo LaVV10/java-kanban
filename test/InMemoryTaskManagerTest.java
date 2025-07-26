@@ -1,4 +1,5 @@
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class InMemoryTaskManagerTest {
@@ -16,7 +17,7 @@ class InMemoryTaskManagerTest {
         taskManager.addEpic(epic);
         SubTask subtask1 = new SubTask("Тестовая подзадача 1", "sdelay sub 1", Status.NEW, epic.getTaskId());
         taskManager.addSubTask(subtask1);
-        SubTask subtask2= new SubTask("Тестовая подзадача 2", "sdelay sub 2", Status.IN_PROGRESS, epic.getTaskId());
+        SubTask subtask2 = new SubTask("Тестовая подзадача 2", "sdelay sub 2", Status.IN_PROGRESS, epic.getTaskId());
         taskManager.addSubTask(subtask2);
 
         // Проверяем, что подзадачи привязаны к эпику

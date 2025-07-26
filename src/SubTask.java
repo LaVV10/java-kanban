@@ -28,8 +28,8 @@ public class SubTask extends Task {
     @Override
     public String toString() {
         return "SubTask {" +
-                "taskName = " + this.getTaskName()  +
-                ", taskDescription = " + this.getTaskDescription()  +
+                "taskName = " + this.getTaskName() +
+                ", taskDescription = " + this.getTaskDescription() +
                 ", taskId = " + this.getTaskId() +
                 ", taskStatus = " + this.getTaskStatus() +
                 ", epicId = " + this.getEpicId() +

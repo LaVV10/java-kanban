@@ -1,4 +1,5 @@
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class TaskTest {
@@ -8,7 +9,7 @@ class TaskTest {
     public void testEqualTasks() {
         // Создаем две задачи с одинаковыми идентификаторами
         Task task1 = new Task("Задача 1", "play", Status.IN_PROGRESS);
-        Task task2 = new Task(task1.getTaskId(), "Другое название", "stop play",Status.NEW);
+        Task task2 = new Task(task1.getTaskId(), "Другое название", "stop play", Status.NEW);
         // Проверяем, что задачи равны
         assertEquals(task1, task2, "Задачи с одинаковыми идентификаторами должны быть равны");
     }
@@ -36,10 +37,5 @@ class TaskTest {
             epic.addSubTask((SubTask) epic); // приведение к Subtask для демонстрации
         }, "Эпик не должен быть добавлен в самого себя в виде подзадачи");
     }*/
-
-
-
-
-
 
 }

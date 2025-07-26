@@ -200,7 +200,7 @@ public class InMemoryTaskManager implements TaskManager {
         if (epic == null) {
             System.out.println("Задача с указанным идентификатором не найдена");
         } else {
-            List<SubTask> tasksToDelete = epic.getSubTasks() ;
+            List<SubTask> tasksToDelete = epic.getSubTasks();
             for (SubTask task : tasksToDelete) {
                 subTasks.remove(task.getTaskId()); // удаляем подзадачу по её идентификатору
             }

@@ -7,6 +7,7 @@ public class Task {
     private Status taskStatus;
     private String taskDescription;
     private static long id;
+
     public Task(String taskName,
                 String taskDescription,
                 Status taskStatus) {
@@ -14,6 +15,7 @@ public class Task {
         this.taskStatus = taskStatus;
         this.taskDescription = taskDescription;
     }
+
     public Task(long taskId,
                 String taskName,
                 String taskDescription,
@@ -77,15 +79,15 @@ public class Task {
         Task task = (Task) o;
         return Objects.equals(taskId, task.taskId);
     }
-               // Objects.equals(taskName, task.taskName) &&
-               // taskStatus.equals(task.taskStatus) &&
-               // Objects.equals(taskDescription, task.taskDescription);
+    // Objects.equals(taskName, task.taskName) &&
+    // taskStatus.equals(task.taskStatus) &&
+    // Objects.equals(taskDescription, task.taskDescription);
 
 
     @Override
     public int hashCode() {
         return Objects.hash(taskId);
     }
-                //taskName, taskStatus, taskDescription);
+    //taskName, taskStatus, taskDescription);
 
 }

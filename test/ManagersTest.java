@@ -22,9 +22,9 @@ class ManagersTest {
     public void testTaskManagerMethodsWork() {
         // Проверяем, что методы менеджера задач работают корректно
         TaskManager taskManager = Managers.getDefault();
-        Task task = new Task(1, "Задача 1", "play", Status.IN_PROGRESS);
+        Task task = new Task("Задача 1", "play", Status.IN_PROGRESS);
         taskManager.addTask(task);
-        assertEquals(task, taskManager.getTask(1), "Задача должна быть добавлена и получена корректно");
+        assertEquals(task, taskManager.getTask(task.getTaskId()), "Задача должна быть добавлена и получена корректно");
     }
 
 }

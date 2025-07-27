@@ -4,13 +4,9 @@ import java.util.Map;
 
 public class InMemoryHistoryManager implements HistoryManager {
 
-    private Map<Long, Node> historyMap;
-    private HistoryLinkedList<Task> historyLinkedList;
+    private Map<Long, Node> historyMap = new HashMap<>();
+    private HistoryLinkedList<Task> historyLinkedList = new HistoryLinkedList<>();
 
-    public InMemoryHistoryManager() {
-        historyMap = new HashMap<>();
-        historyLinkedList = new HistoryLinkedList<>();
-    }
 
     @Override
     public void add(Task task) {

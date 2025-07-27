@@ -93,16 +93,10 @@ public class Epic extends Task {
         if (o == null || getClass() != o.getClass()) return false;
         Task task = (Task) o;
         return Objects.equals(this.getTaskId(), task.getTaskId());
-                /*this.getTaskName().equals(task.getTaskName()) &&
-                this.getTaskDescription().equals(task.getTaskDescription()) &&
-                this.getTaskStatus().equals(task.getTaskStatus());*/
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(this.getTaskId());
-                /*this.getTaskName(),
-                this.getTaskDescription(),
-                this.getTaskStatus());*/
     }
 }

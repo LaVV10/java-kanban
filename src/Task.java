@@ -79,15 +79,9 @@ public class Task {
         Task task = (Task) o;
         return Objects.equals(taskId, task.taskId);
     }
-    // Objects.equals(taskName, task.taskName) &&
-    // taskStatus.equals(task.taskStatus) &&
-    // Objects.equals(taskDescription, task.taskDescription);
-
 
     @Override
     public int hashCode() {
         return Objects.hash(taskId);
     }
-    //taskName, taskStatus, taskDescription);
-
 }

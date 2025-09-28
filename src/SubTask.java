@@ -28,8 +28,8 @@ public class SubTask extends Task {
     @Override
     public String toString() {
         return "SubTask {" +
-                "taskName = " + this.getTaskName()  +
-                ", taskDescription = " + this.getTaskDescription()  +
+                "taskName = " + this.getTaskName() +
+                ", taskDescription = " + this.getTaskDescription() +
                 ", taskId = " + this.getTaskId() +
                 ", taskStatus = " + this.getTaskStatus() +
                 ", epicId = " + this.getEpicId() +
@@ -42,18 +42,11 @@ public class SubTask extends Task {
         if (o == null || getClass() != o.getClass()) return false;
         SubTask that = (SubTask) o;
         return this.getTaskId() == that.getTaskId();
-        /*this.getTaskName().equals(that.getTaskName()) &&
-        // this.getTaskDescription().equals(that.getTaskDescription()) &&
-        // this.getTaskStatus().equals(that.getTaskStatus()) &&
-        // this.getEpicId() == that.getEpicId()*/
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(this.getTaskId(),
                 epicId);
-        /*this.getTaskName(),
-        //this.getTaskDescription(),
-        //this.getTaskStatus())*/
     }
 }

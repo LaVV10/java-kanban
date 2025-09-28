@@ -1,4 +1,5 @@
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class InMemoryTaskManagerTest {
@@ -14,12 +15,25 @@ class InMemoryTaskManagerTest {
         taskManager.addTask(task);
         Epic epic = new Epic("Тестовый эпик", "sdelay Epic");
         taskManager.addEpic(epic);
-        SubTask subtask = new SubTask("Тестовая подзадача", "sdelay sub", Status.NEW, epic.getTaskId());
-        taskManager.addSubTask(subtask);
+        SubTask subtask1 = new SubTask("Тестовая подзадача 1", "sdelay sub 1", Status.NEW, epic.getTaskId());
+        taskManager.addSubTask(subtask1);
+        SubTask subtask2 = new SubTask("Тестовая подзадача 2", "sdelay sub 2", Status.IN_PROGRESS, epic.getTaskId());
+        taskManager.addSubTask(subtask2);
+
+        // Проверяем, что подзадачи привязаны к эпику
+        assertEquals(epic.getTaskId(), subtask1.getEpicId());
+        assertEquals(epic.getTaskId(), subtask2.getEpicId());
+
+        // Удаляем одну подзадачу
+        taskManager.removeSubTask(subtask2.getTaskId());
+
+        // Проверяем, что удалённая подзадача больше не привязана к эпику
+        assertFalse(epic.getSubTasks().contains(subtask2));
+        assertTrue(epic.getSubTasks().contains(subtask1));
 
         // Проверяем, что задачи добавлены и могут быть найдены по идентификатору
         assertEquals(task, taskManager.getTask(task.getTaskId()), "Задача должна быть найдена");
-        assertEquals(subtask, taskManager.getSubTask(subtask.getTaskId()), "Подзадача должна быть найдена");
+        assertEquals(subtask1, taskManager.getSubTask(subtask1.getTaskId()), "Подзадача должна быть найдена");
         assertEquals(epic, taskManager.getEpic(epic.getTaskId()), "Эпик должен быть найден");
     }
 

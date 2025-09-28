@@ -5,10 +5,10 @@ import java.util.Map;
 
 public class InMemoryTaskManager implements TaskManager {
 
-    private HistoryManager historyManager;
-    private Map<Long, Task> tasks;
-    private Map<Long, SubTask> subTasks;
-    private Map<Long, Epic> epics;
+    protected InMemoryHistoryManager historyManager;
+    protected Map<Long, Task> tasks;
+    protected Map<Long, SubTask> subTasks;
+    protected Map<Long, Epic> epics;
 
     // Коллекция для хранения задач
     public InMemoryTaskManager() {
@@ -105,6 +105,7 @@ public class InMemoryTaskManager implements TaskManager {
         long id = Task.getNewId(); // Берём следующий свободный идентификатор
         task.setTaskId(id); // Присваиваем идентификатор задаче
         tasks.put(id, task); // Добавляем задачу в словарь
+        historyManager.add(task);
     }
 
     @Override
@@ -112,6 +113,7 @@ public class InMemoryTaskManager implements TaskManager {
         long id = Task.getNewId(); // Берём следующий свободный идентификатор
         epic.setTaskId(id); // Присваиваем идентификатор задаче
         epics.put(id, epic); // Добавляем задачу в словарь
+        historyManager.add(epic);
     }
 
     @Override
@@ -123,6 +125,7 @@ public class InMemoryTaskManager implements TaskManager {
         if (epic != null) {
             subTasks.put(id, subTask);
             epic.addSubTask(subTask); // Добавляем подзадачу в список подзадач эпика
+            historyManager.add(subTask);
         } else {
             System.out.println("Эпик не найден");
         }

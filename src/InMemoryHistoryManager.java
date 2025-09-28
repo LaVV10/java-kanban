@@ -7,7 +7,6 @@ public class InMemoryHistoryManager implements HistoryManager {
     private Map<Long, Node> historyMap = new HashMap<>();
     private HistoryLinkedList<Task> historyLinkedList = new HistoryLinkedList<>();
 
-
     @Override
     public void add(Task task) {
         if (historyMap.containsKey(task.getTaskId())) {

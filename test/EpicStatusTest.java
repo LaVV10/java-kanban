@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class EpicStatusTest {
 
+    InMemoryTaskManager taskManager = new InMemoryTaskManager();
+
     @Test
     void testEpicStatusAllNew() {
 
@@ -50,9 +52,9 @@ class EpicStatusTest {
 
         Epic epic = new Epic("Test Epic", "Description");
         taskManager.addEpic(epic);
-        SubTask subTask1 = new SubTask("Subtask 1", "Description 1", Status.NEW, 1,
+        SubTask subTask1 = new SubTask("Subtask 1", "Description 1", Status.NEW, epic.getTaskId(),
                 LocalDateTime.now(), Duration.ofMinutes(30));
-        SubTask subTask2 = new SubTask("Subtask 2", "Description 2", Status.DONE, 1,
+        SubTask subTask2 = new SubTask("Subtask 2", "Description 2", Status.DONE, epic.getTaskId(),
                 LocalDateTime.now().plusHours(1), Duration.ofMinutes(60));
 
         taskManager.addSubTask(subTask1);
@@ -68,9 +70,9 @@ class EpicStatusTest {
 
         Epic epic = new Epic("Test Epic", "Description");
         taskManager.addEpic(epic);
-        SubTask subTask1 = new SubTask("Subtask 1", "Description 1", Status.IN_PROGRESS, 1,
+        SubTask subTask1 = new SubTask("Subtask 1", "Description 1", Status.IN_PROGRESS, epic.getTaskId(),
                 LocalDateTime.now(), Duration.ofMinutes(30));
-        SubTask subTask2 = new SubTask("Subtask 2", "Description 2", Status.NEW, 1,
+        SubTask subTask2 = new SubTask("Subtask 2", "Description 2", Status.NEW, epic.getTaskId(),
                 LocalDateTime.now().plusHours(1), Duration.ofMinutes(60));
 
         taskManager.addSubTask(subTask1);

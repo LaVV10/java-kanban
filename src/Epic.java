@@ -59,8 +59,8 @@ public class Epic extends Task {
             throw new IllegalArgumentException("Эпик не может быть подзадачей самого себя");
         }
         subTasks.add(subTask); // Добавляем подзадачу
-        checkEpicStatus();
         recalculateEpicData();
+        checkEpicStatus();
     }
 
     public void deleteSubTask(SubTask subTask) {

@@ -1,12 +1,28 @@
 import java.util.Objects;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
-public class Task {
+public class Task implements Comparable<Task> {
 
     private long taskId;
     private String taskName;
     private Status taskStatus;
     private String taskDescription;
     private static long id;
+    protected LocalDateTime startTime; // Время начала задачи
+    protected Duration duration;
+
+    public Task(String taskName,
+                String taskDescription,
+                Status taskStatus,
+                LocalDateTime startTime,
+                Duration duration) {
+        this.taskName = taskName;
+        this.taskStatus = taskStatus;
+        this.taskDescription = taskDescription;
+        this.startTime = startTime;
+        this.duration = duration;
+    }
 
     public Task(String taskName,
                 String taskDescription,
@@ -16,14 +32,40 @@ public class Task {
         this.taskDescription = taskDescription;
     }
 
-    public Task(long taskId,
-                String taskName,
-                String taskDescription,
-                Status taskStatus) {
-        this.taskId = taskId;
-        this.taskName = taskName;
-        this.taskStatus = taskStatus;
-        this.taskDescription = taskDescription;
+    @Override
+    public int compareTo(Task other) {
+        if (this.startTime == null || other.startTime == null) {
+            return Boolean.compare(this.startTime != null, other.startTime != null);
+        }
+        return this.startTime.compareTo(other.startTime);
+    }
+
+    public static boolean isOverlapping(Task a, Task b) {
+        if (a.getStartTime() == null || a.getDuration() == null ||
+                b.getStartTime() == null || b.getDuration() == null) {
+            return false;
+        }
+
+        LocalDateTime aStart = a.getStartTime();
+        LocalDateTime aEnd = a.getEndTime();
+
+        LocalDateTime bStart = b.getStartTime();
+        LocalDateTime bEnd = b.getEndTime();
+
+        // Проверка наложение отрезков [aStart, aEnd) и [bStart, bEnd)
+        return aStart.isBefore(bEnd) && bStart.isBefore(aEnd);
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public Duration getDuration() {
+        return duration;
+    }
+
+    public LocalDateTime getEndTime() {
+        return startTime.plus(duration);
     }
 
     public static long getNewId() {
@@ -69,6 +111,8 @@ public class Task {
                 ", taskDescription = " + taskDescription +
                 ", taskStatus = " + taskStatus +
                 ", taskId = " + taskId +
+                ", startTime=" + startTime +
+                ", duration=" + duration +
                 '}';
     }
 

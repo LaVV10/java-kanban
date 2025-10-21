@@ -1,7 +1,4 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class InMemoryTaskManager implements TaskManager {
 
@@ -9,6 +6,7 @@ public class InMemoryTaskManager implements TaskManager {
     protected Map<Long, Task> tasks;
     protected Map<Long, SubTask> subTasks;
     protected Map<Long, Epic> epics;
+    private final Set<Task> prioritizedTasks = new TreeSet<>();
 
     // Коллекция для хранения задач
     public InMemoryTaskManager() {
@@ -17,6 +15,32 @@ public class InMemoryTaskManager implements TaskManager {
         epics = new HashMap<>();
         historyManager = new InMemoryHistoryManager();
     }
+
+    /**
+     * Проверяет, пересекается ли новая задача с любой из существующих.
+     */
+    protected boolean hasOverlapWithExisting(Task newTask) {
+        List<Task> prioritized = getPrioritizedTasks();
+        return prioritized.stream()
+                .anyMatch(task -> Task.isOverlapping(newTask, task));
+    }
+
+    public List<Task> getPrioritizedTasks() {
+        return new ArrayList<>(prioritizedTasks);
+    }
+
+    // Метод для добавления задачи в TreeSet, если startTime задан
+    protected void addPrioritizedTask(Task task) {
+        if (task.getStartTime() != null) {
+            prioritizedTasks.add(task);
+        }
+    }
+
+    // Метод для удаления задачи из TreeSet
+    protected void removePrioritizedTask(Task task) {
+        prioritizedTasks.remove(task);
+    }
+
 
     @Override
     public List<Task> getHistory() {
@@ -102,10 +126,15 @@ public class InMemoryTaskManager implements TaskManager {
     // Метод для создания задачи
     @Override
     public void addTask(Task task) {
-        long id = Task.getNewId(); // Берём следующий свободный идентификатор
-        task.setTaskId(id); // Присваиваем идентификатор задаче
-        tasks.put(id, task); // Добавляем задачу в словарь
+        if (hasOverlapWithExisting(task)) {
+            throw new ManagerLoadException("Нельзя добавить задачу — она пересекается с другой");
+        }
+
+        long id = Task.getNewId();
+        task.setTaskId(id);
+        tasks.put(id, task);
         historyManager.add(task);
+        addPrioritizedTask(task); // Добавляем в TreeSet, если startTime задан
     }
 
     @Override
@@ -118,13 +147,18 @@ public class InMemoryTaskManager implements TaskManager {
 
     @Override
     public void addSubTask(SubTask subTask) {
+        if (hasOverlapWithExisting(subTask)) {
+            throw new ManagerLoadException("Нельзя добавить подзадачу — она пересекается с другой");
+        }
+
         long id = Task.getNewId();
         subTask.setTaskId(id);
         long epicId = subTask.getEpicId();
-        Epic epic = epics.get(epicId);     // Находим эпик по идентификатору
+        Epic epic = epics.get(epicId);
         if (epic != null) {
             subTasks.put(id, subTask);
-            epic.addSubTask(subTask); // Добавляем подзадачу в список подзадач эпика
+            epic.addSubTask(subTask);
+            addPrioritizedTask(subTask);
             historyManager.add(subTask);
         } else {
             System.out.println("Эпик не найден");
@@ -134,11 +168,16 @@ public class InMemoryTaskManager implements TaskManager {
     // Метод для обновления задачи
     @Override
     public void updateTask(Task updatedTask, long id) {
-
-        // Проверяем, существует ли задача с таким идентификатором
         if (tasks.containsKey(id)) {
-            updatedTask.setTaskId(id);
-            tasks.put(id, updatedTask); // Обновляем задачу в словаре задач
+            Task oldTask = tasks.get(id);
+
+            if (hasOverlapWithExisting(updatedTask)) {
+                throw new ManagerLoadException("Нельзя обновить задачу — она пересекается с другой");
+            }
+
+            removePrioritizedTask(oldTask);
+            tasks.put(id, updatedTask);
+            addPrioritizedTask(updatedTask);
         } else {
             System.out.println("Задача не найдена");
         }
@@ -150,9 +189,17 @@ public class InMemoryTaskManager implements TaskManager {
             SubTask oldSubTask = subTasks.get(id);
             if (oldSubTask != null) {
                 Epic epic = epics.get(oldSubTask.getEpicId());
-                epic.deleteSubTask(oldSubTask);
-                subTasks.put(id, updatedSubTask); // Обновляем подзадачу
-                epic.addSubTask(updatedSubTask);
+                if (epic != null) {
+                    if (hasOverlapWithExisting(updatedSubTask)) {
+                        throw new ManagerLoadException("Нельзя обновить подзадачу — она пересекается с другой");
+                    }
+
+                    epic.deleteSubTask(oldSubTask);
+                    removePrioritizedTask(oldSubTask);
+                    subTasks.put(id, updatedSubTask);
+                    epic.addSubTask(updatedSubTask);
+                    addPrioritizedTask(updatedSubTask);
+                }
             }
         } else {
             System.out.println("Подзадача не найдена");
@@ -182,7 +229,8 @@ public class InMemoryTaskManager implements TaskManager {
             long epicId = subTask.getEpicId();
             Epic epic = epics.get(epicId);
             if (epic != null) {
-                epic.deleteSubTask(subTask); // Удаляем подзадачу из списка подзадач эпика
+                epic.deleteSubTask(subTask);
+                removePrioritizedTask(subTask); // Удаляем из TreeSet
             } else {
                 System.out.println("Эпик не найден");
             }
@@ -192,7 +240,11 @@ public class InMemoryTaskManager implements TaskManager {
     // Удаление задачи по идентификатору
     @Override
     public void deleteTask(long id) {
-        if (tasks.remove(id) == null) {
+        Task task = tasks.remove(id);
+        if (task != null) {
+            historyManager.remove(id);
+            removePrioritizedTask(task); // Удаляем из TreeSet
+        } else {
             System.out.println("Задача с указанным идентификатором не найдена");
         }
     }
@@ -203,10 +255,9 @@ public class InMemoryTaskManager implements TaskManager {
         if (epic == null) {
             System.out.println("Задача с указанным идентификатором не найдена");
         } else {
-            List<SubTask> tasksToDelete = epic.getSubTasks();
-            for (SubTask task : tasksToDelete) {
-                subTasks.remove(task.getTaskId()); // удаляем подзадачу по её идентификатору
-            }
+            epic.getSubTasks().stream()
+                    .map(SubTask::getTaskId)
+                    .forEach(subTasks::remove); // удаляем подзадачи по их идентификаторам
             epic.clearSubTasks();
             System.out.println("Эпик успешно удалён");
         }

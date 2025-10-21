@@ -1,3 +1,5 @@
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -8,13 +10,44 @@ public class Epic extends Task {
 
     public Epic(String taskName,
                 String taskDescription) {
-        super(taskName, taskDescription, Status.NEW);
+        super(taskName, taskDescription, Status.NEW, null, null);
     }
 
-    public Epic(long taskId,
-                String taskName,
-                String taskDescription) {
-        super(taskId, taskName, taskDescription, Status.NEW);
+    private void recalculateEpicData() {
+        if (subTasks.isEmpty()) {
+            setStartTime(null); // Если нет подзадач, то нет и времени начала
+            setDuration(Duration.ZERO); // Общая продолжительность — 0
+            return;
+        }
+
+        // Находим минимальную дату начала и сумму продолжительностей
+        LocalDateTime minStartTime = null;
+        Duration totalDuration = Duration.ZERO;
+        for (SubTask subTask : subTasks) {
+            if (minStartTime == null || subTask.getStartTime().isBefore(minStartTime)) {
+                minStartTime = subTask.getStartTime();
+            }
+            totalDuration = totalDuration.plus(subTask.getDuration());
+        }
+
+        setStartTime(minStartTime); // Самое раннее время начала
+        setDuration(totalDuration); // Сумма продолжительностей подзадач
+    }
+
+    // Метод для получения времени завершения эпика
+    public LocalDateTime getEndTime() {
+        if (getStartTime() == null || getDuration() == null) {
+            return null;
+        }
+        return getStartTime().plus(getDuration());
+    }
+
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public void setDuration(Duration duration) {
+        this.duration = duration;
     }
 
     public List<SubTask> getSubTasks() {
@@ -26,47 +59,37 @@ public class Epic extends Task {
             throw new IllegalArgumentException("Эпик не может быть подзадачей самого себя");
         }
         subTasks.add(subTask); // Добавляем подзадачу
+        recalculateEpicData();
         checkEpicStatus();
     }
 
-    public void deleteSubTask(SubTask subTaskToDelete) {
-        for (int i = subTasks.size() - 1; i >= 0; i--) {
-            if (subTasks.get(i).getTaskId() == subTaskToDelete.getTaskId()) {
-                subTasks.remove(i);
-            }
-        }
-        checkEpicStatus();
+    public void deleteSubTask(SubTask subTask) {
+        subTasks.removeIf(st -> st.getTaskId() == subTask.getTaskId()); // Быстрое удаление
+        recalculateEpicData(); // Пересчитываем данные эпика
     }
 
     // Очищаем список подзадач
     public void clearSubTasks() {
         subTasks.clear();
         checkEpicStatus();
+        recalculateEpicData();
     }
 
     private void checkEpicStatus() {
-        // текущий статус эпика
         if (subTasks.isEmpty()) {
-            setTaskStatus(Status.NEW); // Если нет подзадач, статус NEW
+            setTaskStatus(Status.NEW);
         } else {
-            boolean allNew = true; // Признак того, что все подзадачи NEW
-            boolean allDone = true; // Признак того, что все подзадачи DONE
-
-            for (SubTask subTask : subTasks) {
-                if (subTask.getTaskStatus() != Status.NEW) {
-                    allNew = false; // Если хотя бы одна подзадача не NEW, снимаем признак
-                }
-                if (subTask.getTaskStatus() != Status.DONE) {
-                    allDone = false; // Если хотя бы одна подзадача не DONE, снимаем признак
-                }
-            }
+            boolean allNew = subTasks.stream()
+                    .allMatch(subTask -> subTask.getTaskStatus() == Status.NEW);
+            boolean allDone = subTasks.stream()
+                    .allMatch(subTask -> subTask.getTaskStatus() == Status.DONE);
 
             if (allNew) {
-                setTaskStatus(Status.NEW); // Если все подзадачи NEW, эпик NEW
+                setTaskStatus(Status.NEW);
             } else if (allDone) {
-                setTaskStatus(Status.DONE); // Если все подзадачи DONE, эпик DONE
+                setTaskStatus(Status.DONE);
             } else {
-                setTaskStatus(Status.IN_PROGRESS); // Во всех остальных случаях эпик IN_PROGRESS
+                setTaskStatus(Status.IN_PROGRESS);
             }
         }
     }

@@ -1,9 +1,13 @@
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class FileBackedTaskManager extends InMemoryTaskManager {
 
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final File file;
 
     public FileBackedTaskManager(File file) {
@@ -112,6 +116,7 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         return taskHistory;
     }
 
+
     @Override
     public Task getTask(long id) {
         Task task = super.getTask(id);
@@ -133,11 +138,10 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         return subtask;
     }
 
-    // Метод сохранения задач в файл
     public void save() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, StandardCharsets.UTF_8))) {
-            // Заголовок таблицы
-            writer.write("id,type,name,status,description,epic\n");
+            // Обновленный заголовок с полями startTime и duration
+            writer.write("id,type,name,status,description,start_time,duration,epic\n");
 
             // Сохраняем обычные задачи
             for (Map.Entry<Long, Task> entry : tasks.entrySet()) {
@@ -181,6 +185,21 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                 .append(',')
                 .append(task.getTaskDescription());
 
+        // Добавляем startTime
+        if (task.getStartTime() != null) {
+            result.append(',').append(task.getStartTime().format(DATE_TIME_FORMATTER));
+        } else {
+            result.append(",");
+        }
+
+        // Добавляем duration
+        if (task.getDuration() != null) {
+            result.append(',').append(task.getDuration().toMinutes());
+        } else {
+            result.append(",");
+        }
+
+        // Для подзадач добавляем epic_id
         if (type == TaskType.SUBTASK) {
             result.append(',').append(((SubTask) task).getEpicId());
         }
@@ -189,24 +208,42 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     }
 
     private Task fromString(String value) {
-        String[] fields = value.split(",");
+        String[] fields = value.split(",", -1); // Сохраняем пустые значения
         long id = Long.parseLong(fields[0]);
         TaskType type = TaskType.valueOf(fields[1]);
         String name = fields[2];
         Status status = Status.valueOf(fields[3]);
         String description = fields[4];
 
+        LocalDateTime startTime = null;
+        if (!fields[5].trim().isEmpty()) {
+            startTime = LocalDateTime.parse(fields[5], DATE_TIME_FORMATTER);
+        }
+
+        Duration duration = null;
+        if (!fields[6].trim().isEmpty()) {
+            duration = Duration.ofMinutes(Long.parseLong(fields[6]));
+        }
+
+        Task task;
         switch (type) {
             case TASK:
-                return new Task(id, name, description, status);
+                task = new Task(name, description, status, startTime, duration);
+                break;
             case EPIC:
-                return new Epic(id, name, description);
+                task = new Epic(name, description);
+                break;
             case SUBTASK:
-                long epicId = Long.parseLong(fields[5]);
-                return new SubTask(id, name, description, status, epicId);
+                long epicId = Long.parseLong(fields[7]);
+                task = new SubTask(name, description, status, epicId, startTime, duration);
+                break;
             default:
-                throw new IllegalStateException("Unexpected value: " + type);
+                throw new IllegalStateException("Неожиданный тип задачи: " + type);
         }
+
+        task.setTaskId(id);
+
+        return task;
     }
 
     public static FileBackedTaskManager loadFromFile(File file) {

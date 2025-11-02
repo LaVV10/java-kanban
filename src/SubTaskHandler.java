@@ -1,10 +1,10 @@
+import com.google.gson.JsonSyntaxException;
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
 import java.util.List;
 
-public class SubTaskHandler extends BaseHttpHandler implements HttpHandler {
+public class SubTaskHandler extends BaseHttpHandler {
 
     public SubTaskHandler(TaskManager taskManager) {
         super(taskManager);
@@ -13,21 +13,40 @@ public class SubTaskHandler extends BaseHttpHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) {
         try {
-            switch (exchange.getRequestMethod()) {
-                case "GET":
-                    handleGetSubTasks(exchange);
-                    break;
-                case "POST":
-                    handleAddSubTask(exchange);
-                    break;
-                case "PUT":
-                    handleUpdateSubTask(exchange);
-                    break;
-                case "DELETE":
-                    handleDeleteSubTask(exchange);
-                    break;
-                default:
-                    sendError(exchange, "Unsupported method");
+            String method = exchange.getRequestMethod();
+            String path = exchange.getRequestURI().getPath();
+
+            if (path.equals("/subtasks")) {
+                switch (method) {
+                    case "GET":
+                        handleGetSubTasks(exchange);
+                        break;
+                    case "POST":
+                        handleAddOrUpdateSubTask(exchange);
+                        break;
+                    default:
+                        sendError(exchange, "Unsupported method for /subtasks");
+                }
+            } else if (path.matches(".*/subtasks/\\d+")) {
+                long id = getIdFromPath(exchange);
+                switch (method) {
+                    case "GET":
+                        handleGetSubTaskById(exchange, id);
+                        break;
+                    case "DELETE":
+                        handleDeleteSubTask(exchange);
+                        break;
+                    default:
+                        sendError(exchange, "Unsupported method for /subtasks/{id}");
+                }
+            } else {
+                sendNotFound(exchange);
+            }
+        } catch (NumberFormatException e) {
+            try {
+                sendError(exchange, "Invalid ID format");
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
             }
         } catch (Exception e) {
             try {
@@ -52,26 +71,48 @@ public class SubTaskHandler extends BaseHttpHandler implements HttpHandler {
         sendSubTasks(exchange, subTasks);
     }
 
-    private void handleAddSubTask(HttpExchange exchange) throws IOException {
-        SubTask subTask = parseSubTask(exchange);
-        if (taskManager.hasOverlapWithExisting(subTask)) {
-            sendHasOverlaps(exchange);
-            return;
+    private void handleGetSubTaskById(HttpExchange exchange, long id) throws IOException {
+        SubTask subTask = taskManager.getSubTask(id);
+        if (subTask == null) {
+            sendNotFound(exchange);
+        } else {
+            sendTask(exchange, subTask);
         }
-        taskManager.addSubTask(subTask);
-        sendTask(exchange, subTask);
     }
 
-    private void handleUpdateSubTask(HttpExchange exchange) throws IOException {
-        SubTask subTask = parseSubTask(exchange);
-        taskManager.updateSubTask(subTask, subTask.getTaskId());
-        sendTask(exchange, subTask);
+    // POST /subtasks — добавление или обновление
+    private void handleAddOrUpdateSubTask(HttpExchange exchange) throws IOException {
+        try {
+            SubTask subTask = parseSubTask(exchange);
+            if (subTask.getTaskId() == null || subTask.getTaskId() == 0) {
+                taskManager.addSubTask(subTask);
+                sendTask(exchange, subTask);
+            } else {
+                SubTask existing = taskManager.getSubTask(subTask.getTaskId());
+                if (existing == null || existing.getEpicId() != subTask.getEpicId()) {
+                    sendNotFound(exchange);
+                    return;
+                }
+                taskManager.updateSubTask(subTask, subTask.getTaskId());
+                sendTask(exchange, subTask);
+            }
+        } catch (JsonSyntaxException e) {
+            sendError(exchange, "Invalid JSON format: " + e.getMessage());
+        } catch (TaskOverlapException | IllegalArgumentException e) {
+            sendError(exchange, e.getMessage());
+        } catch (Exception e) {
+            sendError(exchange, "Invalid subtask data: " + e.getMessage());
+        }
     }
 
     private void handleDeleteSubTask(HttpExchange exchange) throws IOException {
-        String[] pathParts = exchange.getRequestURI().getPath().split("/");
-        long id = Long.parseLong(pathParts[pathParts.length - 1]);
+        long id = getIdFromPath(exchange);
         taskManager.removeSubTask(id);
         sendText(exchange, "Subtask deleted", 201);
+    }
+
+    private long getIdFromPath(HttpExchange exchange) {
+        String[] parts = exchange.getRequestURI().getPath().split("/");
+        return Long.parseLong(parts[2]);
     }
 }

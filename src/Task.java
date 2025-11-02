@@ -32,15 +32,15 @@ public class Task implements Comparable<Task> {
         this.taskDescription = taskDescription;
     }
 
-    public static long getNewId() {
+    static long getNewId() {
         return ++idCounter;
     }
 
-    public static void setIdCounter(long newId) {
+    static void setIdCounter(long newId) {
         idCounter = newId;
     }
 
-    public static long getIdCounter() {
+    static long getIdCounter() {
         return idCounter;
     }
 
@@ -48,9 +48,9 @@ public class Task implements Comparable<Task> {
         return taskId;
     }
 
-    public void setTaskId(Long taskId) {
-        if (taskId != null) {
-            this.taskId = taskId;
+    void setTaskId(long id) {
+        if (this.taskId == 0) {
+            this.taskId = id;
         }
     }
 

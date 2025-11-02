@@ -1,10 +1,9 @@
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
 import java.util.List;
 
-public class TaskHandler extends BaseHttpHandler implements HttpHandler {
+public class TaskHandler extends BaseHttpHandler {
 
     public TaskHandler(TaskManager taskManager) {
         super(taskManager);
@@ -13,21 +12,43 @@ public class TaskHandler extends BaseHttpHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) {
         try {
-            switch (exchange.getRequestMethod()) {
-                case "GET":
-                    handleGetTasks(exchange);
-                    break;
-                case "POST":
-                    handleAddTask(exchange);
-                    break;
-                case "PUT":
-                    handleUpdateTask(exchange);
-                    break;
-                case "DELETE":
-                    handleDeleteTask(exchange);
-                    break;
-                default:
-                    sendError(exchange, "Unsupported method");
+            String method = exchange.getRequestMethod();
+            String path = exchange.getRequestURI().getPath();
+
+            if (path.equals("/tasks")) {
+                switch (method) {
+                    case "GET":
+                        handleGetTasks(exchange);
+                        break;
+                    case "POST":
+                        handleAddOrUpdateTask(exchange);
+                        break;
+                    case "DELETE":
+                        handleDeleteTasks(exchange);
+                        break;
+                    default:
+                        sendError(exchange, "Unsupported method for /tasks");
+                }
+            } else if (path.matches(".*/tasks/\\d+")) {
+                long id = getIdFromPath(exchange);
+                switch (method) {
+                    case "GET":
+                        handleGetTaskById(exchange, id);
+                        break;
+                    case "DELETE":
+                        handleDeleteTask(exchange);
+                        break;
+                    default:
+                        sendError(exchange, "Unsupported method for /tasks/{id}");
+                }
+            } else {
+                sendNotFound(exchange);
+            }
+        } catch (NumberFormatException e) {
+            try {
+                sendError(exchange, "Invalid ID format");
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
             }
         } catch (Exception e) {
             try {
@@ -43,26 +64,51 @@ public class TaskHandler extends BaseHttpHandler implements HttpHandler {
         sendTasks(exchange, tasks);
     }
 
-    private void handleAddTask(HttpExchange exchange) throws IOException {
-        Task task = parseTask(exchange);
-        if (taskManager.hasOverlapWithExisting(task)) {
-            sendHasOverlaps(exchange);
-            return;
+    private void handleGetTaskById(HttpExchange exchange, long id) throws IOException {
+        Task task = taskManager.getTask(id);
+        if (task == null) {
+            sendNotFound(exchange);
+        } else {
+            sendTask(exchange, task);
         }
-        taskManager.addTask(task);
-        sendTask(exchange, task);
     }
 
-    private void handleUpdateTask(HttpExchange exchange) throws IOException {
+    // POST /tasks — добавление ИЛИ обновление (upsert)
+    private void handleAddOrUpdateTask(HttpExchange exchange) throws IOException {
         Task task = parseTask(exchange);
-        taskManager.updateTask(task, task.getTaskId());
-        sendTask(exchange, task);
+        try {
+            if (task.getTaskId() == null || task.getTaskId() == 0) {
+                // Новая задача
+                taskManager.addTask(task);
+                sendTask(exchange, task);
+            } else {
+                // Обновление существующей
+                Task existing = taskManager.getTask(task.getTaskId());
+                if (existing == null) {
+                    sendNotFound(exchange);
+                    return;
+                }
+                taskManager.updateTask(task, task.getTaskId());
+                sendTask(exchange, task);
+            }
+        } catch (TaskOverlapException e) {
+            sendHasOverlaps(exchange);
+        }
     }
 
     private void handleDeleteTask(HttpExchange exchange) throws IOException {
-        String[] pathParts = exchange.getRequestURI().getPath().split("/");
-        long id = Long.parseLong(pathParts[pathParts.length - 1]);
+        long id = getIdFromPath(exchange);
         taskManager.deleteTask(id);
         sendText(exchange, "Task deleted", 201);
+    }
+
+    private void handleDeleteTasks(HttpExchange exchange) throws IOException {
+        taskManager.clearAllTasks();
+        sendText(exchange, "All tasks deleted", 201);
+    }
+
+    private long getIdFromPath(HttpExchange exchange) {
+        String[] parts = exchange.getRequestURI().getPath().split("/");
+        return Long.parseLong(parts[2]);
     }
 }

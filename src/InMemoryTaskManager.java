@@ -16,11 +16,8 @@ public class InMemoryTaskManager implements TaskManager {
         historyManager = new InMemoryHistoryManager();
     }
 
-    /**
-     * Проверяет, пересекается ли новая задача с любой из существующих.
-     */
-    @Override
-    public boolean hasOverlapWithExisting(Task newTask) {
+    //Проверяет, пересекается ли новая задача с любой из существующих.
+    private boolean hasOverlapWithExisting(Task newTask) {
         List<Task> prioritized = getPrioritizedTasks();
         return prioritized.stream()
                 .anyMatch(task -> Task.isOverlapping(newTask, task));
@@ -150,21 +147,21 @@ public class InMemoryTaskManager implements TaskManager {
     @Override
     public void addSubTask(SubTask subTask) {
         if (hasOverlapWithExisting(subTask)) {
-            throw new ManagerLoadException("Нельзя добавить подзадачу — она пересекается с другой");
+            throw new TaskOverlapException("Пересечение по времени");
         }
 
         long id = Task.getNewId();
         subTask.setTaskId(id);
         long epicId = subTask.getEpicId();
         Epic epic = epics.get(epicId);
-        if (epic != null) {
-            subTasks.put(id, subTask);
-            epic.addSubTask(subTask);
-            addPrioritizedTask(subTask);
-            historyManager.add(subTask);
-        } else {
-            System.out.println("Эпик не найден");
+        if (epic == null) {
+            throw new IllegalArgumentException("Эпик с id=" + epicId + " не найден");
         }
+
+        subTasks.put(id, subTask);
+        epic.addSubTask(subTask);
+        addPrioritizedTask(subTask);
+        historyManager.add(subTask);
     }
 
     // Метод для обновления задачи

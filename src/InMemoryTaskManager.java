@@ -19,12 +19,14 @@ public class InMemoryTaskManager implements TaskManager {
     /**
      * Проверяет, пересекается ли новая задача с любой из существующих.
      */
-    protected boolean hasOverlapWithExisting(Task newTask) {
+    @Override
+    public boolean hasOverlapWithExisting(Task newTask) {
         List<Task> prioritized = getPrioritizedTasks();
         return prioritized.stream()
                 .anyMatch(task -> Task.isOverlapping(newTask, task));
     }
 
+    @Override
     public List<Task> getPrioritizedTasks() {
         return new ArrayList<>(prioritizedTasks);
     }

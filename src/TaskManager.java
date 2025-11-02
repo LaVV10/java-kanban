@@ -51,4 +51,8 @@ public interface TaskManager {
     void deleteTask(long id);
 
     void deleteEpic(long id);
+
+    boolean hasOverlapWithExisting(Task task);
+
+    List<Task> getPrioritizedTasks();
 }

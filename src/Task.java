@@ -8,7 +8,7 @@ public class Task implements Comparable<Task> {
     private String taskName;
     private Status taskStatus;
     private String taskDescription;
-    private static long id;
+    private static long idCounter = 0;
     protected LocalDateTime startTime; // Время начала задачи
     protected Duration duration;
 
@@ -30,6 +30,28 @@ public class Task implements Comparable<Task> {
         this.taskName = taskName;
         this.taskStatus = taskStatus;
         this.taskDescription = taskDescription;
+    }
+
+    public static long getNewId() {
+        return ++idCounter;
+    }
+
+    public static void setIdCounter(long newId) {
+        idCounter = newId;
+    }
+
+    public static long getIdCounter() {
+        return idCounter;
+    }
+
+    public Long getTaskId() {
+        return taskId;
+    }
+
+    public void setTaskId(Long taskId) {
+        if (taskId != null) {
+            this.taskId = taskId;
+        }
     }
 
     @Override
@@ -66,18 +88,6 @@ public class Task implements Comparable<Task> {
 
     public LocalDateTime getEndTime() {
         return startTime.plus(duration);
-    }
-
-    public static long getNewId() {
-        return ++id;
-    }
-
-    public Long getTaskId() {
-        return taskId;
-    }
-
-    public void setTaskId(Long taskId) {
-        this.taskId = taskId;
     }
 
     public String getTaskName() {

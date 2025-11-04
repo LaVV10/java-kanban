@@ -48,38 +48,6 @@ public class BaseHttpTest {
         return gson.fromJson(response.body(), Task.class);
     }
 
-    protected Epic createEpic(Epic epic) throws IOException, InterruptedException {
-        String json = gson.toJson(epic);
-        HttpResponse<String> response = client.send(
-                HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:8080/epics"))
-                        .POST(HttpRequest.BodyPublishers.ofString(json))
-                        .header("Content-Type", "application/json")
-                        .build(),
-                HttpResponse.BodyHandlers.ofString()
-        );
-        return gson.fromJson(response.body(), Epic.class);
-    }
-
-    protected SubTask createSubTask(SubTask subTask) throws IOException, InterruptedException {
-        String json = gson.toJson(subTask);
-
-        HttpResponse<String> response = client.send(
-                HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:8080/subtasks"))
-                        .POST(HttpRequest.BodyPublishers.ofString(json))
-                        .header("Content-Type", "application/json")
-                        .build(),
-                HttpResponse.BodyHandlers.ofString()
-        );
-
-        if (response.statusCode() != 200) {
-            throw new RuntimeException("Ошибка при создании подзадачи: " + response.body());
-        }
-
-        return gson.fromJson(response.body(), SubTask.class);
-    }
-
     private static Gson createGson() {
         return new GsonBuilder()
                 .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
@@ -88,7 +56,7 @@ public class BaseHttpTest {
                 .create();
     }
 
-    protected Task getTaskById(long id) throws IOException, InterruptedException {
+    protected void getTaskById(long id) throws IOException, InterruptedException {
         HttpResponse<String> response = client.send(
                 HttpRequest.newBuilder()
                         .uri(URI.create("http://localhost:8080/tasks/" + id))
@@ -98,9 +66,9 @@ public class BaseHttpTest {
         );
 
         if (response.statusCode() == 404) {
-            return null;
+            return;
         }
 
-        return gson.fromJson(response.body(), Task.class);
+        gson.fromJson(response.body(), Task.class);
     }
 }

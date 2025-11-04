@@ -23,12 +23,13 @@ public abstract class BaseHttpHandler implements HttpHandler {
                 .create();
     }
 
-    protected void sendText(HttpExchange exchange, String text, int responseCode) throws IOException {
-        byte[] resp = text.getBytes(StandardCharsets.UTF_8);
-        exchange.getResponseHeaders().add("Content-Type", "application/json;charset=utf-8");
-        exchange.sendResponseHeaders(responseCode, resp.length);
-        exchange.getResponseBody().write(resp);
-        exchange.close();
+    protected void sendText(HttpExchange exchange, String text, int status) throws IOException {
+        byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.sendResponseHeaders(status, bytes.length);
+        try (var os = exchange.getResponseBody()) {
+            os.write(bytes);
+        }
     }
 
     protected void sendNotFound(HttpExchange exchange) throws IOException {

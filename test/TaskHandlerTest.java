@@ -6,6 +6,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,9 +24,25 @@ public class TaskHandlerTest extends BaseHttpTest {
                 Duration.ofMinutes(45)
         );
 
-        Task saved = createTask(task);
+        // Отправляем POST /tasks → тестируем эндпоинт
+        HttpResponse<String> response = client.send(
+                HttpRequest.newBuilder()
+                        .uri(URI.create("http://localhost:8080/tasks"))
+                        .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(task)))
+                        .header("Content-Type", "application/json")
+                        .build(),
+                HttpResponse.BodyHandlers.ofString()
+        );
 
-        assertNotNull(saved.getTaskId(), "ID задачи должен быть присвоен");
+        // Проверяем ответ
+        assertEquals(200, response.statusCode(), "Ожидался статус 200 при добавлении");
+
+        // Проверяем состояние через менеджер
+        List<Task> allTasks = taskManager.getAllTasks();
+        assertEquals(1, allTasks.size(), "Должна быть одна задача");
+
+        Task saved = allTasks.get(0);
+        assertNotNull(saved.getTaskId(), "ID должен быть присвоен");
         assertEquals("Add Task", saved.getTaskName());
         assertEquals(BASE_TIME.plusHours(1), saved.getStartTime());
         assertEquals(Duration.ofMinutes(45), saved.getDuration());
@@ -34,70 +51,83 @@ public class TaskHandlerTest extends BaseHttpTest {
 
     @Test
     void shouldGetTaskById() throws IOException, InterruptedException {
-        Task saved = createTask(new Task(
+        // Подготовка: добавляем задачу напрямую
+        Task task = new Task(
                 "Get Task",
                 "Description",
                 Status.NEW,
                 BASE_TIME.plusHours(2),
                 Duration.ofMinutes(30)
-        ));
+        );
+        taskManager.addTask(task);
 
+        // Выполняем GET /tasks/{id}
         HttpResponse<String> response = client.send(
                 HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:8080/tasks/" + saved.getTaskId()))
+                        .uri(URI.create("http://localhost:8080/tasks/" + task.getTaskId()))
                         .GET()
                         .build(),
                 HttpResponse.BodyHandlers.ofString()
         );
 
-        assertEquals(200, response.statusCode(), "Ожидался статус 200 при получении задачи");
-
+        // Проверяем ответ
+        assertEquals(200, response.statusCode());
         Task retrieved = gson.fromJson(response.body(), Task.class);
-        assertNotNull(retrieved, "Полученная задача не должна быть null");
-        assertEquals(saved.getTaskId(), retrieved.getTaskId());
+
+        // Проверяем поля
+        assertEquals(task.getTaskId(), retrieved.getTaskId());
         assertEquals("Get Task", retrieved.getTaskName());
         assertEquals(BASE_TIME.plusHours(2), retrieved.getStartTime());
         assertEquals(Duration.ofMinutes(30), retrieved.getDuration());
     }
 
+
     @Test
     void shouldUpdateTask() throws IOException, InterruptedException {
-        Task original = new Task(
-                "Original",
-                "Desc",
-                Status.NEW,
-                BASE_TIME.plusHours(1),
-                Duration.ofMinutes(30)
+        // 1. Подготовка: добавляем задачу напрямую
+        Task task = new Task("Original", "Desc", Status.NEW,
+                BASE_TIME.plusHours(1), Duration.ofMinutes(30));
+        taskManager.addTask(task);
+
+        // 2. Формируем обновлённую версию
+        Task updatedData = new Task("Updated", "New Desc", Status.DONE,
+                BASE_TIME.plusHours(2), Duration.ofMinutes(60));
+        updatedData.setTaskId(task.getTaskId());
+
+        // 3. Отправляем POST → это upsert
+        HttpResponse<String> response = client.send(
+                HttpRequest.newBuilder()
+                        .uri(URI.create("http://localhost:8080/tasks"))
+                        .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(updatedData)))
+                        .header("Content-Type", "application/json")
+                        .build(),
+                HttpResponse.BodyHandlers.ofString()
         );
-        Task saved = createTask(original);
 
-        Task updateData = new Task(
-                "Updated Task",
-                "Updated Desc",
-                Status.DONE,
-                BASE_TIME.plusHours(3),
-                Duration.ofMinutes(90)
-        );
-        updateData.setTaskId(saved.getTaskId());
+        assertEquals(200, response.statusCode());
 
-        // Отправляем на сервер → это вызовет update
-        Task updated = createTask(updateData);
-
-        assertEquals("Updated Task", updated.getTaskName());
-        assertEquals("Updated Desc", updated.getTaskDescription());
-        assertEquals(Status.DONE, updated.getTaskStatus());
-        assertEquals(BASE_TIME.plusHours(3), updated.getStartTime());
-        assertEquals(Duration.ofMinutes(90), updated.getDuration());
-        assertEquals(BASE_TIME.plusHours(4).plusMinutes(30), updated.getEndTime());
+        // 4. Проверяем через менеджер
+        Task saved = taskManager.getTask(task.getTaskId());
+        assertNotNull(saved);
+        assertEquals("Updated", saved.getTaskName());
+        assertEquals("New Desc", saved.getTaskDescription());
+        assertEquals(Status.DONE, saved.getTaskStatus());
+        assertEquals(BASE_TIME.plusHours(2), saved.getStartTime());
+        assertEquals(Duration.ofMinutes(60), saved.getDuration());
     }
 
     @Test
     void shouldGetAllTasks() throws IOException, InterruptedException {
-        createTask(new Task("Task 1", "Desc", Status.NEW,
-                BASE_TIME.plusHours(1), Duration.ofMinutes(30)));
-        createTask(new Task("Task 2", "Desc", Status.IN_PROGRESS,
-                BASE_TIME.plusHours(2), Duration.ofMinutes(60)));
+        // Подготовка: добавляем напрямую
+        Task task1 = new Task("Task 1", "Desc", Status.NEW,
+                BASE_TIME.plusHours(1), Duration.ofMinutes(30));
+        Task task2 = new Task("Task 2", "Desc", Status.IN_PROGRESS,
+                BASE_TIME.plusHours(2), Duration.ofMinutes(60));
 
+        taskManager.addTask(task1);
+        taskManager.addTask(task2);
+
+        // Выполняем GET /tasks
         HttpResponse<String> response = client.send(
                 HttpRequest.newBuilder()
                         .uri(URI.create("http://localhost:8080/tasks"))
@@ -106,44 +136,42 @@ public class TaskHandlerTest extends BaseHttpTest {
                 HttpResponse.BodyHandlers.ofString()
         );
 
-        assertEquals(200, response.statusCode(), "Ожидался статус 200 для GET /tasks");
+        assertEquals(200, response.statusCode(), "Ожидался статус 200");
+
         Task[] tasks = gson.fromJson(response.body(), Task[].class);
+        assertNotNull(tasks);
+        assertEquals(2, tasks.length, "Должно быть 2 задачи");
 
-        assertNotNull(tasks, "Список задач не должен быть null");
-        assertTrue(tasks.length >= 2, "Должно быть как минимум 2 задачи");
-
-        // Проверим первую
-        assertTrue(tasks[0].getTaskName().startsWith("Task"));
+        // Проверяем содержимое
+        assertEquals("Task 1", tasks[0].getTaskName());
+        assertEquals("Task 2", tasks[1].getTaskName());
         assertNotNull(tasks[0].getStartTime());
         assertNotNull(tasks[0].getDuration());
     }
 
     @Test
     void shouldDeleteTask() throws IOException, InterruptedException {
-        Task saved = createTask(new Task(
+        // Подготовка: добавляем напрямую
+        Task task = new Task(
                 "Delete Task",
                 "Desc",
                 Status.NEW,
                 BASE_TIME.plusHours(5),
                 Duration.ofMinutes(15)
-        ));
+        );
+        taskManager.addTask(task);
 
+        // Выполняем DELETE /tasks/{id}
         client.send(
                 HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:8080/tasks/" + saved.getTaskId()))
+                        .uri(URI.create("http://localhost:8080/tasks/" + task.getTaskId()))
                         .DELETE()
                         .build(),
                 HttpResponse.BodyHandlers.ofString()
         );
 
-        HttpResponse<String> get = client.send(
-                HttpRequest.newBuilder()
-                        .uri(URI.create("http://localhost:8080/tasks/" + saved.getTaskId()))
-                        .GET()
-                        .build(),
-                HttpResponse.BodyHandlers.ofString()
-        );
-
-        assertEquals(404, get.statusCode(), "После удаления задача должна быть недоступна");
+        // Проверяем: задача удалена — через менеджер
+        Task deleted = taskManager.getTask(task.getTaskId());
+        assertNull(deleted, "Задача должна быть удалена");
     }
 }

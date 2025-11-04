@@ -2,8 +2,12 @@ import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class EpicHandler extends BaseHttpHandler {
+
+    private static final Pattern EPICS_ID_PATTERN = Pattern.compile("^/epics/\\d+$");
+    private static final Pattern EPICS_ID_SUBTASKS_PATTERN = Pattern.compile("^/epics/\\d+/subtasks$");
 
     public EpicHandler(TaskManager taskManager) {
         super(taskManager);
@@ -14,47 +18,34 @@ public class EpicHandler extends BaseHttpHandler {
         try {
             String method = exchange.getRequestMethod();
             String path = exchange.getRequestURI().getPath();
-            String[] parts = path.split("/");
 
-            if (!path.startsWith("/epics")) {
-                sendNotFound(exchange);
-                return;
-            }
-
-            switch (parts.length) {
-                case 2 -> {
-                    switch (method) {
-                        case "GET":
-                            handleGetEpics(exchange);
-                            break;
-                        case "POST":
-                            handleAddOrUpdateEpic(exchange);
-                            break;
-                        default:
-                            sendError(exchange, "Unsupported method: " + method);
-                    }
-                }
-                case 3 -> {
-                    long id = Long.parseLong(parts[2]);
-                    switch (method) {
-                        case "GET" -> handleGetEpicById(exchange);
-                        case "DELETE" -> handleDeleteEpic(exchange);
-                        default -> sendError(exchange, "Unsupported method: " + method);
-                    }
-                }
-                case 4 -> {
-                    if ("subtasks".equals(parts[3])) {
-                        long epicId = Long.parseLong(parts[2]);
-                        switch (method) {
-                            case "GET" -> handleGetSubTasksByEpicId(exchange, epicId);
-                            case "POST" -> handleAddOrUpdateSubTaskToEpic(exchange, epicId);
-                            default -> sendNotFound(exchange);
-                        }
+            switch (method) {
+                case "GET":
+                    if ("/epics".equals(path)) {
+                        handleGetEpics(exchange);
+                    } else if (EPICS_ID_PATTERN.matcher(path).matches()) {
+                        handleGetEpicById(exchange);
+                    } else if (EPICS_ID_SUBTASKS_PATTERN.matcher(path).matches()) {
+                        handleGetSubTasksByEpicId(exchange);
                     } else {
                         sendNotFound(exchange);
                     }
-                }
-                default -> sendNotFound(exchange);
+                    break;
+
+                case "POST":
+                    handleAddOrUpdateEpic(exchange);
+                    break;
+
+                case "DELETE":
+                    if (EPICS_ID_PATTERN.matcher(path).matches()) {
+                        handleDeleteEpic(exchange);
+                    } else {
+                        sendError(exchange, "Unsupported DELETE path");
+                    }
+                    break;
+
+                default:
+                    sendError(exchange, "Unsupported method: " + method);
             }
         } catch (NumberFormatException e) {
             try {
@@ -64,47 +55,12 @@ public class EpicHandler extends BaseHttpHandler {
             }
         } catch (Exception e) {
             try {
-                sendError(exchange, e.getMessage());
+                sendError(exchange, "Server error: " + e.getMessage());
             } catch (IOException ex) {
-                System.out.println("Failed to send error response: " + ex.getMessage());
+                throw new RuntimeException(ex);
             }
-        }
-    }
-
-    private void handleGetSubTasksByEpicId(HttpExchange exchange, long epicId) throws IOException {
-        List<SubTask> subTasks = taskManager.getEpicSubTasks(epicId);
-        if (subTasks.isEmpty()) {
-            sendText(exchange, "[]", 200);
-        } else {
-            sendSubTasks(exchange, subTasks);
-        }
-    }
-
-    private void handleAddOrUpdateSubTaskToEpic(HttpExchange exchange, long epicId) throws IOException {
-        try {
-            SubTask subTask = parseSubTask(exchange);
-
-            if (subTask.getEpicId() != epicId) {
-                sendError(exchange, "Epic ID in path and in task body do not match");
-                return;
-            }
-
-            if (subTask.getTaskId() == null || subTask.getTaskId() == 0) {
-                taskManager.addSubTask(subTask);
-                sendTask(exchange, subTask);
-            } else {
-                SubTask existing = taskManager.getSubTask(subTask.getTaskId());
-                if (existing == null || existing.getEpicId() != epicId) {
-                    sendNotFound(exchange);
-                    return;
-                }
-                taskManager.updateSubTask(subTask, subTask.getTaskId());
-                sendTask(exchange, subTask);
-            }
-        } catch (TaskOverlapException e) {
-            sendHasOverlaps(exchange);
-        } catch (Exception e) {
-            sendError(exchange, "Invalid subtask data: " + e.getMessage());
+        } finally {
+            exchange.close();
         }
     }
 
@@ -123,24 +79,31 @@ public class EpicHandler extends BaseHttpHandler {
         }
     }
 
+    private void handleGetSubTasksByEpicId(HttpExchange exchange) throws IOException {
+        long epicId = getIdFromPath(exchange);
+        List<SubTask> subTasks = taskManager.getEpicSubTasks(epicId);
+        if (subTasks.isEmpty()) {
+            sendText(exchange, "[]", 200);
+        } else {
+            sendSubTasks(exchange, subTasks);
+        }
+    }
+
     private void handleAddOrUpdateEpic(HttpExchange exchange) throws IOException {
         try {
             Epic epic = parseEpic(exchange);
+
             if (epic.getTaskId() == null || epic.getTaskId() == 0) {
                 // Новый эпик
                 taskManager.addEpic(epic);
                 sendTask(exchange, epic);
             } else {
-                // Обновление
-                Epic existing = taskManager.getEpic(epic.getTaskId());
-                if (existing == null) {
-                    sendNotFound(exchange);
-                    return;
-                }
-                epic.setTaskStatus(existing.getTaskStatus()); // Статус управляется подзадачами
+                // Обновление — не проверяем вручную!
                 taskManager.updateEpic(epic, epic.getTaskId());
                 sendTask(exchange, epic);
             }
+        } catch (TaskNotFoundException e) {
+            sendNotFound(exchange);
         } catch (Exception e) {
             sendError(exchange, "Invalid epic data: " + e.getMessage());
         }

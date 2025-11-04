@@ -1,3 +1,4 @@
+import com.google.gson.JsonSyntaxException;
 import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
@@ -75,24 +76,23 @@ public class TaskHandler extends BaseHttpHandler {
 
     // POST /tasks — добавление ИЛИ обновление (upsert)
     private void handleAddOrUpdateTask(HttpExchange exchange) throws IOException {
-        Task task = parseTask(exchange);
         try {
+            Task task = parseTask(exchange);
             if (task.getTaskId() == null || task.getTaskId() == 0) {
-                // Новая задача
                 taskManager.addTask(task);
                 sendTask(exchange, task);
             } else {
-                // Обновление существующей
-                Task existing = taskManager.getTask(task.getTaskId());
-                if (existing == null) {
-                    sendNotFound(exchange);
-                    return;
-                }
                 taskManager.updateTask(task, task.getTaskId());
                 sendTask(exchange, task);
             }
+        } catch (TaskNotFoundException e) {
+            sendNotFound(exchange);
         } catch (TaskOverlapException e) {
             sendHasOverlaps(exchange);
+        } catch (JsonSyntaxException e) {
+            sendError(exchange, "Invalid JSON");
+        } catch (Exception e) {
+            sendError(exchange, "Invalid task data");
         }
     }
 

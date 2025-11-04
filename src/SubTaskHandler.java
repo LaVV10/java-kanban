@@ -84,24 +84,22 @@ public class SubTaskHandler extends BaseHttpHandler {
     private void handleAddOrUpdateSubTask(HttpExchange exchange) throws IOException {
         try {
             SubTask subTask = parseSubTask(exchange);
+
             if (subTask.getTaskId() == null || subTask.getTaskId() == 0) {
                 taskManager.addSubTask(subTask);
                 sendTask(exchange, subTask);
             } else {
-                SubTask existing = taskManager.getSubTask(subTask.getTaskId());
-                if (existing == null || existing.getEpicId() != subTask.getEpicId()) {
-                    sendNotFound(exchange);
-                    return;
-                }
                 taskManager.updateSubTask(subTask, subTask.getTaskId());
                 sendTask(exchange, subTask);
             }
-        } catch (JsonSyntaxException e) {
-            sendError(exchange, "Invalid JSON format: " + e.getMessage());
+        } catch (TaskNotFoundException e) {
+            sendNotFound(exchange);
         } catch (TaskOverlapException | IllegalArgumentException e) {
             sendError(exchange, e.getMessage());
+        } catch (JsonSyntaxException e) {
+            sendError(exchange, "Invalid JSON");
         } catch (Exception e) {
-            sendError(exchange, "Invalid subtask data: " + e.getMessage());
+            sendError(exchange, "Invalid subtask data");
         }
     }
 

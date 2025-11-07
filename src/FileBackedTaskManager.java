@@ -157,6 +157,9 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             for (Map.Entry<Long, SubTask> entry : subTasks.entrySet()) {
                 writer.write(taskToString(entry.getValue()) + "\n");
             }
+
+            writer.write("id_counter," + Task.getIdCounter() + "\n");
+
         } catch (IOException e) {
             throw new ManagerSaveException("Ошибка при сохранении файла", e);
         }
@@ -249,22 +252,42 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     public static FileBackedTaskManager loadFromFile(File file) {
         FileBackedTaskManager manager = new FileBackedTaskManager(file);
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            // Пропускаем первую строку (заголовок)
-            reader.readLine();
+        try (BufferedReader reader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8))) {
+            reader.readLine(); // Пропускаем заголовок
 
-            // Читаем строки с задачами
+            List<String> lines = new ArrayList<>();
             String line;
             while ((line = reader.readLine()) != null) {
-                Task task = manager.fromString(line);
-                if (task instanceof Epic) {
-                    manager.epics.put(task.getTaskId(), (Epic) task);
-                } else if (task instanceof SubTask) {
+                lines.add(line);
+            }
+
+            // Сначала загружаем все задачи, кроме id_counter
+            for (String value : lines) {
+                if (value.startsWith("id_counter,")) {
+                    long savedId = Long.parseLong(value.split(",")[1]);
+                    Task.setIdCounter(savedId);
+                    break;
+                }
+
+                Task task = manager.fromString(value);
+
+                if (task instanceof SubTask) {
                     manager.subTasks.put(task.getTaskId(), (SubTask) task);
-                } else if (task instanceof Task) {
+                } else if (task instanceof Epic) {
+                    manager.epics.put(task.getTaskId(), (Epic) task);
+                } else {
                     manager.tasks.put(task.getTaskId(), (Task) task);
                 }
             }
+
+            // Восстановить связи "подзадача → эпик"
+            for (SubTask subTask : manager.subTasks.values()) {
+                Epic epic = manager.epics.get(subTask.getEpicId());
+                if (epic != null) {
+                    epic.addSubTask(subTask); // Вызывает recalculate и checkStatus
+                }
+            }
+
         } catch (IOException e) {
             throw new ManagerLoadException("Ошибка при загрузке файла", e);
         }
